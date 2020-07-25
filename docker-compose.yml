@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  proxy:
+    image: jwilder/nginx-proxy:latest
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    ports:
+      - "80:80"
+
+  db:
+    image: mysql:5.7
+    volumes:
+      - ./mysql:/var/lib/mysql
+    env_file: environment.env
+
+  wp:
+    image: wordpress:5.4-php7.4-apache
+    volumes:
+      - ./html:/var/www/html
+      - ./docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+    ports:
+      - "8000:80"
+    env_file: environment.env
+    environment:
+      VIRTUAL_HOST: wp-local.com
+    depends_on:
+      - db
+    working_dir: /var/www/html/wp
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    volumes:
+      - ./phpmyadmin/sessions:/sessions
+    ports:
+      - "8080:80"
+    env_file: environment.env
+    links:
+      - db
+
+  ftp:
+    image: stilliard/pure-ftpd:latest
+    volumes:
+      - ./html:/var/www/html
+      - ./ftp/passwd:/etc/pure-ftpd/passwd
+    ports:
+      - "21:21"
+      - "30000-30009:30000-30009"
+    env_file: environment.env
